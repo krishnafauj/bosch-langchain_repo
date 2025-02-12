@@ -1,12 +1,12 @@
 # requirements.txt
-flask==2.0.1
-langchain==0.1.0
-faiss-cpu==1.7.4
-pypdf==3.17.1
-langchain-community==0.0.10
-mistralai==0.0.7
-sentence-transformers==2.2.2
-scikit-learn==1.0.2
-numpy==1.21.6
-requests==2.31.0
-gunicorn==20.1.0
+flask
+langchain
+faiss-cpu
+pypdf
+langchain-community
+mistralai
+sentence-transformers
+scikit-learn
+numpy
+requests
+gunicorn
