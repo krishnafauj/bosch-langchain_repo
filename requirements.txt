@@ -9,3 +9,4 @@ numpy
 requests
 langchain-huggingface
 gunicorn
+langchain-community
