@@ -2,14 +2,9 @@
 flask
 langchain
 faiss-cpu
-pypdf
-langchain-community
 mistralai
 sentence-transformers
 scikit-learn
 numpy
 requests
-json
-flask
-gunicorn
 langchain-huggingface
