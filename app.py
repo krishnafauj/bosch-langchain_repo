@@ -126,7 +126,7 @@ def is_similar_question(new_question: str, threshold: float = 0.8) -> Tuple[bool
         return False, ""
 
 # Load the text file and create the vector database
-text_file_path = "/kaggle/input/bosch-txt-file-1/bosch_txt.txt"  # Replace with your text file path
+text_file_path = "./bosch_txt.txt"  # Replace with your text file path
 text_content = load_text_file(text_file_path)
 vectordb = get_index_for_text([text_content], ["text_file_name"])
 
