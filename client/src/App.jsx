@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, Smile, Paperclip, MoreVertical, Search } from "lucide-react";
 import imageSrc from "./image.png";
 
-export default function Chatbot() {
+export default function App() {
   const toolLinks = {
     "GWB 12V-10": "https://www.bosch-professional.com/gb/en/products/gwb-12v-10-0601390909",
     "GWB 10 RE": "https://www.bosch-professional.com/lb/en/products/gwb-10-re-0601132703",
@@ -29,20 +29,24 @@ export default function Chatbot() {
     "GSR 12V-15": "https://www.bosch-pt.co.in/in/en/products/gsr-12v-15-fc-06019F60F0",
     "GSR 18V-60 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-60-c-06019G1102",
     "GSR 18V-110 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-110-c-06019G0109",
-    "GSB 18V-110 C": "https://www.bosch-professional.com/sa/en/products/gsb-18v-110-c-06019G030A"
-  };
-  
-  const [messages, setMessages] = useState([]);
+    "GSB 18V-110 C": "https://www.bosch-professional.com/sa/en/products/gsb-18v-110-c-06019G030A",
+    "GSR 18V-55": "https://www.bosch-professional.com/gb/en/products/gsr-18v-55-06019H5202"
+  }
+
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Hey there! 👋", sender: "them", time: "09:41" },
+    { id: 2, text: "Hi! How are you?", sender: "me", time: "09:42" },
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessages = [...messages, { text: input, sender: "user" }];
+    const newMessages = [...messages, { text: input, sender: "me", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-    
+
     try {
       const response = await fetch("https://bosch-langchain-repo-2.onrender.com/ask", {
         method: "POST",
@@ -50,72 +54,77 @@ export default function Chatbot() {
         body: JSON.stringify({ question: input })
       });
       const data = await response.json();
-  
       let botResponse = data.answer.replace(/\n/g, "<br />");
       let links = "";
-  
-      // Check if any tool name exists in the response and collect their links
+
       for (const tool in toolLinks) {
-        if (botResponse.includes(tool)) 
-        {
+        if (botResponse.includes(tool)) {
           links += `<br /><a href="${toolLinks[tool]}" target="_blank" class="text-blue-400 underline">More about ${tool}</a>`;
         }
-        
       }
-  
-      if (links) {
-        botResponse += `<br /><br />Related Tools:${links}`;
-      }
-  
-      setMessages([...newMessages, { text: botResponse, sender: "bot" }]);
+      if (links) botResponse += `<br /><br />Related Tools:${links}`;
+      setMessages([...newMessages, { text: botResponse, sender: "them", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }]);
     } catch (error) {
       console.error("Error fetching response:", error);
     }
     setLoading(false);
   };
-  
 
-  return (<div className="flex flex-col  min-w-screen items-center gap-5 h-screen bg-gray-900 text-white ">
-    <img src={imageSrc} alt="Description" />
+  return (
+    <div className="flex h-screen min-w-screen bg-gray-500">
+      <div className="flex flex-col flex-1 bg-gray-600 shadow-xl  mb-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center ">
+            <img src={imageSrc} alt="Logo" className="h-10 w-full " />
 
-      <div className="flex flex-col w-full pl-50 max-w-5xl mb-5 pb-24 m-2 space-y-5 flex-grow overflow-auto">
-        {messages.map((msg, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`max-w-lg px-4 py-2 rounded-lg ${
-              msg.sender === "user" ? "ml-auto bg-blue-500" : "mr-auto bg-gray-700"
-            }`}
-            style={{ marginRight: msg.sender === "user" ? 200 : 0, marginLeft: msg.sender === "bot" ? 200 : 0 }}
-            dangerouslySetInnerHTML={{ __html: msg.text }}
-          />
-        ))}
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mr-auto bg-gray-700 px-4 py-2 rounded-lg"
-            style={{ marginLeft: 200 }}
-          >
-            ...
-          </motion.div>
-        )}
-      </div>
-      <div className="flex items-center w-full max-w-lg p-4  border-t border-gray-700 fixed bottom-0 bg-gray-900">
-        <input
-          className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none"
-          placeholder="Ask something..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-        />
-        <button
-          className="ml-4 p-2 bg-blue-500 rounded-lg hover:bg-blue-600"
-          onClick={sendMessage}
-        >
-          <Send className="w-6 h-6 text-white" />
-        </button>
+          </div>
+
+        </div>
+
+        <div className="flex-1 flex flex-col  items-center overflow-y-auto p-6 space-y-4 ">
+          {messages.map((msg, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`w-fit max-w-lg px-4 py-2 rounded-2xl ${msg.sender === "me"
+                  ? "bg-blue-500 text-white rounded-br-none self-end"
+                  : "bg-gray-100 text-gray-800 rounded-bl-none self-start"
+                }`}
+              dangerouslySetInnerHTML={{ __html: msg.text }}
+            />
+          ))}
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-gray-700 px-4 py-2 rounded-lg text-white"
+            >
+              ...
+            </motion.div>
+          )}
+        </div>
+
+
+        <div className="px-6 py-4 border-t bg-black">
+          <div className="flex items-center  space-x-4 ">
+            <button className="p-2 hover:bg-gray-100 rounded-full"><Paperclip className="w-5 h-5 text-gray-500" /></button>
+            <div className="flex-1 flex items-center space-x-4 bg-gray-600 rounded-full px-4 py-2">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 bg-transparent outline-none"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+              />
+              <button className="p-2 hover:bg-gray-200 rounded-full"><Smile className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <button onClick={sendMessage} className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full text-white">
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
