@@ -1,35 +1,34 @@
 import requests
 import json
 from langchain.chains import RetrievalQA
-from langchain.embeddings import HuggingFaceEmbeddings  # Use HuggingFace embeddings as an alternative
+# Use HuggingFace embeddings as an alternative
 from langchain.vectorstores.faiss import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
-import faiss
 import re
 import numpy as np
 from typing import List, Tuple
 from langchain.embeddings import HuggingFaceEmbeddings
 from sklearn.metrics.pairwise import cosine_similarity
-from flask import Flask
-# Initialize Flask app
-app = Flask(__name__)
-
-# Mistral API configuration
-MISTRAL_API_KEY = "gbDR18JGRwoLDXAuFEpml7AufaKmjkqu"  # Replace with your Mistral AI API key
+from langchain.embeddings import HuggingFaceEmbeddings  
+MISTRAL_API_KEY = "Bc18tJ1uBzW8AbJGn9KvymBhZou1QSwj"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 # Define the template for the chatbot prompt
 prompt_template = """
     You are a helpful Assistant who answers users' questions based on the context provided.
+
     Keep your answer short and to the point.
-    The evidence is the context of the text extract with metadata. 
-    Carefully focus on the metadata, especially 'filename' and 'page', whenever answering.
-    Make sure to add filename and page number at the end of the sentence you are citing.
+  
     Reply "Not applicable" if the text is irrelevant.
+     
     The text content is:
     {text_extract}
 """ 
+
+
+
+
 
 # Initialize embeddings for vector storage
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -91,7 +90,6 @@ def load_text_file(file_path):
         content = file.read()
     return content
 
-# Function to call Mistral AI API
 def call_mistral_api(messages):
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
@@ -124,53 +122,46 @@ def is_similar_question(new_question: str, threshold: float = 0.8) -> Tuple[bool
         return True, answer_history[max_similarity_index]
     else:
         return False, ""
-
-# Load the text file and create the vector database
-text_file_path = "./bosch_txt.txt"  # Replace with your text file path
-text_content = load_text_file(text_file_path)
-vectordb = get_index_for_text([text_content], ["text_file_name"])
-
-# Flask endpoint to handle questions
-@app.route("/ask", methods=["POST"])
-def ask_question():
-    data = request.json
-    question = data.get("question")
-    
-    if not question:
-        return jsonify({"error": "No question provided"}), 400
-    
-    # Check if the question is similar to previous questions
-    is_similar, previous_answer = is_similar_question(question)
-    if is_similar:
-        return jsonify({"answer": previous_answer})
-    
-    # Search the vectordb for similar content to the user's question (RAG)
-    search_results = vectordb.similarity_search(question, k=3)
-    text_extract = "\n".join([result.page_content for result in search_results])
-
-    # Update the prompt with the text extract
-    system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
-    user_message = {"role": "user", "content": question}
-
-    # Prepare the messages for the API call (CAG)
-    messages = [system_message, user_message]
-
-    # Call Mistral AI API and display the response
-    response = call_mistral_api(messages)
-    answer = response["choices"][0]["message"]["content"]
-
-    # Clean the answer to remove unwanted references or formatting
-    clean_answer = re.sub(r'\([^)]*\)', '', answer)  # Remove parentheses and their content
-    clean_answer = re.sub(r'\{[^}]*\}', '', clean_answer)  # Remove curly braces and their content
-    clean_answer = clean_answer.strip()  # Remove any leading/trailing whitespace
-
-    # Store the question and answer in history
-    question_embedding = embeddings.embed_query(question)
-    question_history.append(question_embedding)
-    answer_history.append(clean_answer)
-
-    return jsonify({"answer": clean_answer})
-
-# Run the Flask app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    # Load your text file
+    text_file_path = "/kaggle/input/bosch-txt-file-1/bosch_txt.txt"  # Replace with your text file path
+    text_content = load_text_file(text_file_path)
+
+    # Create the vector database
+    vectordb = get_index_for_text([text_content], ["text_file_name"])
+
+    # Ask questions
+
+
+    while True:
+        question = input("Ask a question (or type 'exit' to quit): ")
+        if question.lower() == "exit":
+            break
+
+        # Check if the question is similar to previous questions
+        is_similar, previous_answer = is_similar_question(question)
+        if is_similar:
+            print(f"Answer (from memory): {previous_answer}")
+            continue
+
+        # Search the vectordb for similar content to the user's question (RAG)
+        search_results = vectordb.similarity_search(question, k=3)
+        text_extract = "\n".join([result.page_content for result in search_results])
+
+        # Update the prompt with the text extract
+        system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
+        user_message = {"role": "user", "content": question}
+
+        # Prepare the messages for the API call (CAG)
+        messages = [system_message, user_message]
+
+        # Call Mistral AI API and display the response
+        response = call_mistral_api(messages)
+        answer = response["choices"][0]["message"]["content"]
+
+        print(f"Answer: {answer}")
+
+        # Store the question and answer in history
+        question_embedding = embeddings.embed_query(question)
+        question_history.append(question_embedding)
+        answer_history.append(answer)
