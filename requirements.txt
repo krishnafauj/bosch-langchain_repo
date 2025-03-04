@@ -5,3 +5,4 @@ sentence-transformers
 langchain-community
 gunicorn
 flask
+flask-cors

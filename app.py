@@ -10,9 +10,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 import pickle
 import requests
-
+from flask_cors import CORS 
 app = Flask(__name__)
-
+CORS(app)
 # Initialize Mistral API
 MISTRAL_API_KEY = "Bc18tJ1uBzW8AbJGn9KvymBhZou1QSwj"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
