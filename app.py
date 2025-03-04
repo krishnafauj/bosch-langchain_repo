@@ -25,8 +25,6 @@ prompt_template = """
     Don't Write the sentence based on the context provided.
     Stick with bosch brand only.
     If the context is insufficient, provide a general answer based on your knowledge.
-    Format your answer with newlines (\n) for better readability.
-
     The text content is:
     {text_extract}
 """
