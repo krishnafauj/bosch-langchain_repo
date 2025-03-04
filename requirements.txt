@@ -4,3 +4,4 @@ numpy
 sentence-transformers
 langchain-community
 gunicorn
+flask
