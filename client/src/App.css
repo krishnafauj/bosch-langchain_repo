@@ -76,7 +76,7 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
-
+@import "tailwindcss";
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
