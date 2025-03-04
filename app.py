@@ -1,16 +1,19 @@
-import requests
+from flask import Flask, request, jsonify
 import json
 from langchain.chains import RetrievalQA
-# Use HuggingFace embeddings as an alternative
-from langchain.vectorstores.faiss import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 import re
 import numpy as np
 from typing import List, Tuple
-from langchain.embeddings import HuggingFaceEmbeddings
 from sklearn.metrics.pairwise import cosine_similarity
-from langchain.embeddings import HuggingFaceEmbeddings  
+from sentence_transformers import SentenceTransformer
+import pickle
+import requests
+
+app = Flask(__name__)
+
+# Initialize Mistral API
 MISTRAL_API_KEY = "Bc18tJ1uBzW8AbJGn9KvymBhZou1QSwj"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
@@ -19,77 +22,23 @@ prompt_template = """
     You are a helpful Assistant who answers users' questions based on the context provided.
 
     Keep your answer short and to the point.
-  
-    Reply "Not applicable" if the text is irrelevant.
-     
+    Don't Write the sentence based on the context provided.
+    Stick with bosch brand only.
+    If the context is insufficient, provide a general answer based on your knowledge.
+    Format your answer with newlines (\n) for better readability.
+
     The text content is:
     {text_extract}
-""" 
+"""
 
+# Load the precomputed vector database
+with open("vector_db.pkl", "rb") as f:
+    vector_db = pickle.load(f)
 
+# Initialize the embedding model
+embeddings = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-
-
-# Initialize embeddings for vector storage
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-
-# Initialize conversation history and answer storage
-question_history = []  # Stores vector embeddings of questions
-answer_history = []    # Stores corresponding answers
-
-# Function to parse text files
-def parse_text(file_content: str, filename: str) -> Tuple[List[str], str]:
-    text = file_content
-    text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
-    text = re.sub(r"(?<!\n\s)\n(?!\s\n)", " ", text.strip())
-    text = re.sub(r"\n\s*\n", "\n\n", text)
-    return [text], filename
-
-# Function to convert text to documents
-def text_to_docs(text: List[str], filename: str) -> List[Document]:
-    if isinstance(text, str):
-        text = [text]
-    page_docs = [Document(page_content=page) for page in text]
-    for i, doc in enumerate(page_docs):
-        doc.metadata["page"] = i + 1
-
-    doc_chunks = []
-    for doc in page_docs:
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4000,
-            separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""],
-            chunk_overlap=0,
-        )
-        chunks = text_splitter.split_text(doc.page_content)
-        for i, chunk in enumerate(chunks):
-            doc = Document(
-                page_content=chunk, metadata={"page": doc.metadata["page"], "chunk": i}
-            )
-            doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
-            doc.metadata["filename"] = filename  # Add filename to metadata
-            doc_chunks.append(doc)
-    return doc_chunks  
-
-# Function to create an index from documents
-def docs_to_index(docs):
-    index = FAISS.from_documents(docs, embeddings)
-    return index
-
-# Function to get the index for text files
-def get_index_for_text(text_files, text_names):
-    documents = []
-    for text_file, text_name in zip(text_files, text_names):
-        text, filename = parse_text(text_file, text_name)
-        documents = documents + text_to_docs(text, filename)
-    index = docs_to_index(documents)
-    return index
-
-# Load your text file-based database
-def load_text_file(file_path):
-    with open(file_path, "r", encoding="latin-1") as file:  # Specify Latin-1 encoding
-        content = file.read()
-    return content
-
+# Function to call Mistral API
 def call_mistral_api(messages):
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
@@ -105,63 +54,52 @@ def call_mistral_api(messages):
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
-# Function to check if a question is similar to previous questions
-def is_similar_question(new_question: str, threshold: float = 0.8) -> Tuple[bool, str]:
-    if not question_history:
-        return False, ""
-    
-    # Embed the new question
-    new_question_embedding = embeddings.embed_query(new_question)
-    
-    # Compare with previous questions
-    similarities = cosine_similarity([new_question_embedding], question_history)[0]
-    max_similarity_index = np.argmax(similarities)
-    max_similarity = similarities[max_similarity_index]
-    
-    if max_similarity > threshold:
-        return True, answer_history[max_similarity_index]
+# Function to search the vector database
+def search_vector_db(query: str, top_k: int = 3):
+    # Embed the query
+    query_embedding = embeddings.encode(query).tolist()
+
+    # Compute similarities
+    similarities = []
+    for item in vector_db:
+        similarity = cosine_similarity([query_embedding], [item["embedding"]])[0][0]
+        similarities.append((similarity, item))
+
+    # Sort by similarity and return top_k results
+    similarities.sort(reverse=True, key=lambda x: x[0])
+    return [item for _, item in similarities[:top_k]]
+
+# Function to generate a response using Mistral AI
+def generate_response(query: str, text_extract: str) -> str:
+    # Prepare the prompt for Mistral API
+    system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
+    user_message = {"role": "user", "content": query}
+    messages = [system_message, user_message]
+
+    # Call Mistral AI API
+    response = call_mistral_api(messages)
+    return response["choices"][0]["message"]["content"]
+
+@app.route('/ask', methods=['POST'])
+def ask():
+    data = request.json
+    question = data.get('question')
+
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+
+    # Search the vector database
+    results = search_vector_db(question)
+    text_extract = "\n".join([result["metadata"]["text"] for result in results])
+
+    # Generate a response
+    if text_extract.strip():  # Check if context is available
+        answer = generate_response(question, text_extract)
     else:
-        return False, ""
-if __name__ == "__main__":
-    # Load your text file
-    text_file_path = "/kaggle/input/bosch-txt-file-1/bosch_txt.txt"  # Replace with your text file path
-    text_content = load_text_file(text_file_path)
+        # Fallback response if no relevant context is found
+        answer = "I don't have specific information on that topic, but generally, heavy-duty drilling requires powerful tools like hammer drills or rotary drills, along with appropriate drill bits and safety precautions."
 
-    # Create the vector database
-    vectordb = get_index_for_text([text_content], ["text_file_name"])
+    return jsonify({"answer": answer})
 
-    # Ask questions
-
-
-    while True:
-        question = input("Ask a question (or type 'exit' to quit): ")
-        if question.lower() == "exit":
-            break
-
-        # Check if the question is similar to previous questions
-        is_similar, previous_answer = is_similar_question(question)
-        if is_similar:
-            print(f"Answer (from memory): {previous_answer}")
-            continue
-
-        # Search the vectordb for similar content to the user's question (RAG)
-        search_results = vectordb.similarity_search(question, k=3)
-        text_extract = "\n".join([result.page_content for result in search_results])
-
-        # Update the prompt with the text extract
-        system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
-        user_message = {"role": "user", "content": question}
-
-        # Prepare the messages for the API call (CAG)
-        messages = [system_message, user_message]
-
-        # Call Mistral AI API and display the response
-        response = call_mistral_api(messages)
-        answer = response["choices"][0]["message"]["content"]
-
-        print(f"Answer: {answer}")
-
-        # Store the question and answer in history
-        question_embedding = embeddings.embed_query(question)
-        question_history.append(question_embedding)
-        answer_history.append(answer)
+if __name__ == '__main__':
+    app.run(debug=True)
