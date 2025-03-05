@@ -6,6 +6,9 @@ import imageSrc from "./image.png";
 export default function App() {
   const toolLinks = {
     "GWB 12V-10": "https://www.bosch-professional.com/gb/en/products/gwb-12v-10-0601390909",
+    "GBH 12-52 DV": "https://www.bosch-pt.co.in/in/en/products/gbh-12-52-dv-0611266000",
+    "GBH 2-26 DFR": "https://www.bosch-professional.com/kw/en/products/gbh-2-26-dfr-06112547P0",
+    "GBH 2-28": "https://www.bosch-pt.co.in/in/en/products/gbh-2-28-dv-06112671F0",
     "GWB 10 RE": "https://www.bosch-professional.com/lb/en/products/gwb-10-re-0601132703",
     "GBH 2-26 DRE": "https://www.bosch-professional.com/gb/en/products/gbh-2-26-06112A3060?queryFromSuggest=true&userInput=GBH+2-26+DRE",
     "GBH 18V-40 C": "https://www.bosch-professional.com/gb/en/products/gbh-18v-40-c-0611917100?queryFromSuggest=true&userInput=GBH+18V-40+C",
@@ -25,12 +28,14 @@ export default function App() {
     "GSB 18V-55": "https://www.bosch-professional.com/gb/en/products/gsb-18v-55-06019H5302",
     "GSB 18V-28": "https://www.bosch-professional.com/gb/en/products/gsb-18v-28-06019H4000",
     "GSB 162-2 RE": "https://www.bosch-professional.com/gb/en/products/gsb-162-2-re-060118B060",
+    "GBH 18V-26F": "https://www.bosch-professional.com/gb/en/products/gbh-18v-26f-0611910000",
     "GSB 12V-15": "https://www.bosch-professional.com/gb/en/products/gsb-12v-15-06019B6901",
     "GSR 12V-15": "https://www.bosch-pt.co.in/in/en/products/gsr-12v-15-fc-06019F60F0",
     "GSR 18V-60 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-60-c-06019G1102",
     "GSR 18V-110 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-110-c-06019G0109",
     "GSB 18V-110 C": "https://www.bosch-professional.com/sa/en/products/gsb-18v-110-c-06019G030A",
-    "GSR 18V-55": "https://www.bosch-professional.com/gb/en/products/gsr-18v-55-06019H5202"
+    "GSR 18V-55": "https://www.bosch-professional.com/gb/en/products/gsr-18v-55-06019H5202",
+    "GSR 18V-20": "https://www.bosch-professional.com/gb/en/products/gbh-18v-20-0611911000"
   }
 
   const [messages, setMessages] = useState([
@@ -73,7 +78,7 @@ export default function App() {
   return (
     <div className="flex h-screen min-w-screen bg-gray-500">
       <div className="flex flex-col flex-1 bg-gray-600 shadow-xl  mb-4 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-center justify-between  border-b">
           <div className="flex items-center ">
             <img src={imageSrc} alt="Logo" className="h-10 w-full " />
 
