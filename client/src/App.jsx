@@ -35,7 +35,10 @@ export default function App() {
     "GSR 18V-110 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-110-c-06019G0109",
     "GSB 18V-110 C": "https://www.bosch-professional.com/sa/en/products/gsb-18v-110-c-06019G030A",
     "GSR 18V-55": "https://www.bosch-professional.com/gb/en/products/gsr-18v-55-06019H5202",
-    "GSR 18V-20": "https://www.bosch-professional.com/gb/en/products/gbh-18v-20-0611911000"
+    "GSR 18V-20": "https://www.bosch-professional.com/gb/en/products/gbh-18v-20-0611911000",
+    "GSR 18V-50": "https://www.bosch-pt.co.in/in/en/products/gsr-18v-50-06019H5082",
+    "GSB 18V-LI": "https://www.bosch-pt.co.in/in/en/products/gsr-18v-50-06019H5082",
+
   }
 
   const [messages, setMessages] = useState([
