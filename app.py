@@ -14,16 +14,17 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 # Initialize Mistral API
-MISTRAL_API_KEY = "Bc18tJ1uBzW8AbJGn9KvymBhZou1QSwj"  # Replace with your Mistral AI API key
+MISTRAL_API_KEY = "b9LYWcUZhUSryogd2ICd0CAyi0XwC2fJ"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 # Define the template for the chatbot prompt
 prompt_template = """
     You are a helpful Assistant who answers users' questions based on the context provided.
-
+    In Any Case You will not give any other name other than Bosch.
+    If you don't find any relevant company, just say: 'I don't know about it.' 
     Keep your answer short and to the point.
     Don't Write the sentence based on the context provided.
-    Stick with bosch brand only.
+    Stick with Bosch brand only.
     If the context is insufficient, provide a general answer based on your knowledge.
     The text content is:
     {text_extract}
