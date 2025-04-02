@@ -38,51 +38,77 @@ export default function App() {
     "GSB 18V-LI": "https://www.bosch-pt.co.in/in/en/products/gsr-18v-50-06019H5082",
 
   }
-
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hey there! 👋", sender: "them", time: "09:41" },
     { id: 2, text: "Hi! How are you?", sender: "me", time: "09:42" },
+    { id: 1, text: "I am Bosch Tool Finder! 🛠️ I am here to assist you in finding the right tools. How can I help you today?", sender: "them", time: "09:42" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
+  
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessages = [...messages, { text: input, sender: "me", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }];
+    const newMessages = [
+      ...messages,
+      {
+        text: input,
+        sender: "me",
+        time: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      },
+    ];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-
+  
     try {
-      const response = await fetch("https://bosch-langchain-repo-4.onrender.com/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: input })
-      });
+      const response = await fetch(
+        "https://bosch-langchain-repo-4.onrender.com/ask",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: input }),
+        }
+      );
       const data = await response.json();
       let botResponse = data.answer.replace(/\n/g, "<br />");
-      let links = "";
-
+  
+      // Replace tool keywords with hyperlinks
       for (const tool in toolLinks) {
-        if (botResponse.includes(tool)) {
-          links += `<br /><a href="${toolLinks[tool]}" target="_blank" class="text-blue-400 underline">More about ${tool}</a>`;
-        }
+        const toolRegex = new RegExp(`\\b${tool}\\b`, "g"); // Match whole word
+        botResponse = botResponse.replace(
+          toolRegex,
+          `<a href="${toolLinks[tool]}" target="_blank" class="text-blue-400 underline">${tool}</a>`
+        );
       }
-      if (links) botResponse += `<br /><br />Related Tools:${links}`;
-      setMessages([...newMessages, { text: botResponse, sender: "them", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }]);
+  
+      setMessages([
+        ...newMessages,
+        {
+          text: botResponse,
+          sender: "them",
+          time: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
     } catch (error) {
       console.error("Error fetching response:", error);
     }
     setLoading(false);
   };
+  
 
   return (
     <div className="flex h-screen min-w-screen bg-gray-500">
+      <img src="" alt="" />
       <div className="flex flex-col flex-1 bg-gray-600 shadow-xl  mb-4 overflow-hidden">
         <div className="flex items-center justify-between  border-b">
           <div className="flex items-center ">
             <img src={imageSrc} alt="Logo" className="h-10 w-full " />
-
+          
           </div>
 
         </div>
