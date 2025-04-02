@@ -14,7 +14,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 # Initialize Mistral API
-MISTRAL_API_KEY = "b9LYWcUZhUSryogd2ICd0CAyi0XwC2fJ"  # Replace with your Mistral AI API key
+MISTRAL_API_KEY = "Z51xg0MS4qD9Q6NPGZjQrq9pbDeCsQ8E"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 # Define the template for the chatbot prompt

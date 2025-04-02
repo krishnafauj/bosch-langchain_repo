@@ -33,8 +33,6 @@ export default function App() {
     "GSR 12V-15": "https://www.bosch-pt.co.in/in/en/products/gsr-12v-15-fc-06019F60F0",
     "GSR 18V-60 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-60-c-06019G1102",
     "GSR 18V-110 C": "https://www.bosch-professional.com/gb/en/products/gsr-18v-110-c-06019G0109",
-    "GSB 18V-110 C": "https://www.bosch-professional.com/sa/en/products/gsb-18v-110-c-06019G030A",
-    "GSR 18V-55": "https://www.bosch-professional.com/gb/en/products/gsr-18v-55-06019H5202",
     "GSR 18V-20": "https://www.bosch-professional.com/gb/en/products/gbh-18v-20-0611911000",
     "GSR 18V-50": "https://www.bosch-pt.co.in/in/en/products/gsr-18v-50-06019H5082",
     "GSB 18V-LI": "https://www.bosch-pt.co.in/in/en/products/gsr-18v-50-06019H5082",
