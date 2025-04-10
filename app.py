@@ -11,17 +11,21 @@ from sentence_transformers import SentenceTransformer
 import pickle
 import requests
 from flask_cors import CORS 
+import os
+
 app = Flask(__name__)
 CORS(app)
+
 # Initialize Mistral API
-MISTRAL_API_KEY = "Z51xg0MS4qD9Q6NPGZjQrq9pbDeCsQ8E"  # Replace with your Mistral AI API key
+MISTRAL_API_KEY = "Z51xg0MS4qD9Q6NPGZjQrq9pbDeCsQ8E"
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
-# Define the template for the chatbot prompt
+# Prompt template
 prompt_template = """
     You are a helpful Assistant who answers users' questions based on the context provided.
     In Any Case You will not give any other name other than Bosch.
-    If you don't find any relevant company, just say: 'I don't know about it.' 
+    You are a chat bot for bosch company so reply like a dependent bot of bosch not just a random chat bot.
+    If you don't find any relevant company, just say about Bosch Ignore all other things like a chat bot. 
     Keep your answer short and to the point.
     Don't Write the sentence based on the context provided.
     Stick with Bosch brand only.
@@ -30,21 +34,29 @@ prompt_template = """
     {text_extract}
 """
 
-# Load the precomputed vector database
-with open("vector_db.pkl", "rb") as f:
-    vector_db = pickle.load(f)
+# Lazy-loaded vector DB
+vector_db = None
 
-# Initialize the embedding model
+# Initialize the embedding model (only once)
 embeddings = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-# Function to call Mistral API
+# Function to lazy load vector DB
+def load_vector_db_once():
+    global vector_db
+    if vector_db is None:
+        print("📦 Loading vector database into memory...")
+        with open("new_dataset.pkl", "rb") as f:
+            vector_db = pickle.load(f)
+    return vector_db
+
+# Mistral API call
 def call_mistral_api(messages):
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": "mistral-medium",  # Adjust model as necessary
+        "model": "mistral-medium",
         "messages": messages,
     }
     response = requests.post(MISTRAL_API_URL, headers=headers, json=payload)
@@ -53,32 +65,28 @@ def call_mistral_api(messages):
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
-# Function to search the vector database
+# Vector DB search
 def search_vector_db(query: str, top_k: int = 3):
-    # Embed the query
+    current_db = load_vector_db_once()
     query_embedding = embeddings.encode(query).tolist()
-
-    # Compute similarities
     similarities = []
-    for item in vector_db:
+
+    for item in current_db:
         similarity = cosine_similarity([query_embedding], [item["embedding"]])[0][0]
         similarities.append((similarity, item))
 
-    # Sort by similarity and return top_k results
     similarities.sort(reverse=True, key=lambda x: x[0])
     return [item for _, item in similarities[:top_k]]
 
-# Function to generate a response using Mistral AI
+# Mistral response
 def generate_response(query: str, text_extract: str) -> str:
-    # Prepare the prompt for Mistral API
     system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
     user_message = {"role": "user", "content": query}
     messages = [system_message, user_message]
-
-    # Call Mistral AI API
     response = call_mistral_api(messages)
     return response["choices"][0]["message"]["content"]
 
+# Endpoint
 @app.route('/ask', methods=['POST'])
 def ask():
     data = request.json
@@ -87,21 +95,18 @@ def ask():
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
-    # Search the vector database
     results = search_vector_db(question)
     text_extract = "\n".join([result["metadata"]["text"] for result in results])
 
-    # Generate a response
-    if text_extract.strip():  # Check if context is available
+    if text_extract.strip():
         answer = generate_response(question, text_extract)
     else:
-        # Fallback response if no relevant context is found
         answer = "I don't have specific information on that topic, but generally, heavy-duty drilling requires powerful tools like hammer drills or rotary drills, along with appropriate drill bits and safety precautions."
 
     return jsonify({"answer": answer})
 
-import os
-
+# Preload DB at startup to avoid cold start lag
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Render provides a dynamic port
-    app.run(host='0.0.0.0', port=port, debug=False)  # Bind to all interfaces
+    load_vector_db_once()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

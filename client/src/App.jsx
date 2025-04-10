@@ -26,7 +26,7 @@ export default function App() {
     "GSB 21-2 RE": "https://www.bosch-professional.com/gb/en/products/gsb-21-2-re-060119C560",
     "GSB 18V-21": "https://www.bosch-professional.com/gb/en/products/gsb-18v-21-06019H1108",
     "GSB 18V-55": "https://www.bosch-professional.com/gb/en/products/gsb-18v-55-06019H5302",
-    "GSB 18V-28": "https://www.bosch-professional.com/gb/en/products/gsb-18v-28-06019H4000",
+    "GSR 18V-28": "https://www.bosch-professional.com/gb/en/products/gsb-18v-28-06019H4000",
     "GSB 162-2 RE": "https://www.bosch-professional.com/gb/en/products/gsb-162-2-re-060118B060",
     "GBH 18V-26F": "https://www.bosch-professional.com/gb/en/products/gbh-18v-26f-0611910000",
     "GSB 12V-15": "https://www.bosch-professional.com/gb/en/products/gsb-12v-15-06019B6901",
