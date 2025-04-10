@@ -11,16 +11,13 @@ from sentence_transformers import SentenceTransformer
 import pickle
 import requests
 from flask_cors import CORS 
-import os
-
 app = Flask(__name__)
 CORS(app)
-
 # Initialize Mistral API
-MISTRAL_API_KEY = "Z51xg0MS4qD9Q6NPGZjQrq9pbDeCsQ8E"
+MISTRAL_API_KEY = "Z51xg0MS4qD9Q6NPGZjQrq9pbDeCsQ8E"  # Replace with your Mistral AI API key
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
-# Prompt template
+# Define the template for the chatbot prompt
 prompt_template = """
     You are a helpful Assistant who answers users' questions based on the context provided.
     In Any Case You will not give any other name other than Bosch.
@@ -34,29 +31,21 @@ prompt_template = """
     {text_extract}
 """
 
-# Lazy-loaded vector DB
-vector_db = None
+# Load the precomputed vector database
+with open("vector_db.pkl", "rb") as f:
+    vector_db = pickle.load(f)
 
-# Initialize the embedding model (only once)
+# Initialize the embedding model
 embeddings = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-# Function to lazy load vector DB
-def load_vector_db_once():
-    global vector_db
-    if vector_db is None:
-        print("📦 Loading vector database into memory...")
-        with open("new_dataset.pkl", "rb") as f:
-            vector_db = pickle.load(f)
-    return vector_db
-
-# Mistral API call
+# Function to call Mistral API
 def call_mistral_api(messages):
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": "mistral-medium",
+        "model": "mistral-medium",  # Adjust model as necessary
         "messages": messages,
     }
     response = requests.post(MISTRAL_API_URL, headers=headers, json=payload)
@@ -65,28 +54,32 @@ def call_mistral_api(messages):
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
-# Vector DB search
+# Function to search the vector database
 def search_vector_db(query: str, top_k: int = 3):
-    current_db = load_vector_db_once()
+    # Embed the query
     query_embedding = embeddings.encode(query).tolist()
-    similarities = []
 
-    for item in current_db:
+    # Compute similarities
+    similarities = []
+    for item in vector_db:
         similarity = cosine_similarity([query_embedding], [item["embedding"]])[0][0]
         similarities.append((similarity, item))
 
+    # Sort by similarity and return top_k results
     similarities.sort(reverse=True, key=lambda x: x[0])
     return [item for _, item in similarities[:top_k]]
 
-# Mistral response
+# Function to generate a response using Mistral AI
 def generate_response(query: str, text_extract: str) -> str:
+    # Prepare the prompt for Mistral API
     system_message = {"role": "system", "content": prompt_template.format(text_extract=text_extract)}
     user_message = {"role": "user", "content": query}
     messages = [system_message, user_message]
+
+    # Call Mistral AI API
     response = call_mistral_api(messages)
     return response["choices"][0]["message"]["content"]
 
-# Endpoint
 @app.route('/ask', methods=['POST'])
 def ask():
     data = request.json
@@ -95,18 +88,21 @@ def ask():
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
+    # Search the vector database
     results = search_vector_db(question)
     text_extract = "\n".join([result["metadata"]["text"] for result in results])
 
-    if text_extract.strip():
+    # Generate a response
+    if text_extract.strip():  # Check if context is available
         answer = generate_response(question, text_extract)
     else:
+        # Fallback response if no relevant context is found
         answer = "I don't have specific information on that topic, but generally, heavy-duty drilling requires powerful tools like hammer drills or rotary drills, along with appropriate drill bits and safety precautions."
 
     return jsonify({"answer": answer})
 
-# Preload DB at startup to avoid cold start lag
+import os
+
 if __name__ == '__main__':
-    load_vector_db_once()
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get("PORT", 5000))  # Render provides a dynamic port
+    app.run(host='0.0.0.0', port=port, debug=False)  # Bind to all interfaces
